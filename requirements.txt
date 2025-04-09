@@ -1,0 +1,5 @@
+Flask==2.2.5
+pandas==2.1.4
+requests==2.31.0
+azure-storage-blob==12.19.0
+python-dotenv==1.0.1
