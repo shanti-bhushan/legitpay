@@ -3,3 +3,7 @@ pandas==2.1.4
 requests==2.31.0
 azure-storage-blob==12.19.0
 python-dotenv==1.0.1
+azure-storage-blob
+aiohttp
+semantic-kernel
+typing-extensions
