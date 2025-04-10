@@ -121,3 +121,25 @@ def get_account_criticality():
 
 if __name__ == '__main__':
     app.run(debug=True)
+
+
+
+def get_transactions_with_risks(date):
+    df = read_csv_from_azure("TransactionWRisk.csv")
+    
+    filtered_df_wRisk = df[
+        (df["Transaction_Date"] == date)
+    ]
+    return not filtered_df_wRisk.empty
+
+# Flask endpoint
+@app.route('/check_account/<date>', methods=['GET'])
+def fetchTransactionsWRisk(date):
+
+    if not date:
+        return jsonify({"error": "Missing not found in request body"}), 400
+
+    Outlier = filter_by_account_number(date)
+
+    return jsonify(Outlier), 200
+
