@@ -131,7 +131,7 @@ def fetchTransactionsWRisk(date):
 
     Outlier = get_transactions_with_risks(date)
     outlier_string = str(Outlier.to_dict(orient="records"))
-    return Response(outlier_string, status=200, mimetype='text/plain')
+    return outlier_string
 
 if __name__ == '__main__':
     app.run(debug=True)
