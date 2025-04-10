@@ -133,9 +133,27 @@ def get_transactions_with_risks(date):
     ]
     return filtered_df_wRisk
 
+def get_transactions_with_transactionNum(tran_number):
+    df = read_csv_from_azure("TransactionWRisk.csv")
+    filtered_df_wRisk = df[
+        (df["Transaction_ID"] == tran_number)
+    ]
+    return filtered_df_wRisk
 # Flask endpoint
+@app.route('/fetchtransactionfromtrannum/<tran_number>', methods=['GET'])
+def fetchTransactionsWRisk(tran_number):
+    if not tran_number:
+        return jsonify({"error": "Missing not found in request body"}), 400
+
+    Outlier = get_transactions_with_transactionNum(tran_number)
+    if Outlier.empty:
+        return "No such transaction found."
+    outlier_string = str(Outlier.to_dict(orient="records"))
+    return outlier_string
+
+
 @app.route('/fetchtransactionwithrisk/<date>', methods=['GET'])
-def fetchTransactionsWRisk(date):
+def fetchTransactionsWRiskInroute(date):
     if not date:
         return jsonify({"error": "Missing not found in request body"}), 400
 
