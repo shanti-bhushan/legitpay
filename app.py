@@ -67,51 +67,61 @@ def get_account_criticality():
             return jsonify({'error': 'Missing transaction data'}), 400
 
         account_number = transaction.get('Bank_Account_Number')
-
         if not account_number:
             return jsonify({'error': 'Missing Bank_Account_Number in transaction'}), 400
 
-        # Read data
-        transaction_df = read_csv_from_azure('transactions.csv')
-        user_df = read_csv_from_azure('users.csv')
+        isOutlier = filter_by_account_number(account_number)
+        if isOutlier:
+            # Read data
+            transaction_df = read_csv_from_azure('transactions.csv')
+            user_df = read_csv_from_azure('users.csv')
 
-        # Convert to datetime
-        transaction_df['Transaction_Timestamp'] = pd.to_datetime(transaction_df['Transaction_Timestamp'])
+            # Convert to datetime
+            transaction_df['Transaction_Timestamp'] = pd.to_datetime(transaction_df['Transaction_Timestamp'])
 
-        # Merge data
-        merge_df = transaction_df.merge(user_df, how='inner', on='User_ID')
-        # Filter by account number
-        account_df = merge_df[merge_df['Bank_Account_Number_x'] == account_number]
+            # Merge data
+            merge_df = transaction_df.merge(user_df, how='inner', on='User_ID')
+            # Filter by account number
+            account_df = merge_df[merge_df['Bank_Account_Number_x'] == account_number]
 
-        if account_df.empty:
-            return jsonify({'criticality': 'Unknown', 'reason': 'No transaction history found'})
+            if account_df.empty:
+                return jsonify({'criticality': 'Unknown', 'reason': 'No transaction history found'})
 
-        # Get last 10 transactions
-        last_10_txns = account_df.sort_values(by='Transaction_Timestamp', ascending=False).iloc[:10]
+            # Get last 10 transactions
+            last_10_txns = account_df.sort_values(by='Transaction_Timestamp', ascending=False).iloc[:10]
 
-        # Calculate average and std deviation of invoice amount
-        avg_amt = last_10_txns['Invoice_Amount'].mean()
-        std_amt = last_10_txns['Invoice_Amount'].std()
+            # Calculate average and std deviation of invoice amount
+            avg_amt = last_10_txns['Invoice_Amount'].mean()
+            std_amt = last_10_txns['Invoice_Amount'].std()
 
-        # Calculate refund ratio (guard against division by zero)
-        invoice_amt = transaction.get('Invoice_Amount', 0)
-        refund_amt = transaction.get('Refund_Amount', 0)
-        refund_ratio = refund_amt / invoice_amt if invoice_amt != 0 else 0
+            # Calculate refund ratio (guard against division by zero)
+            invoice_amt = transaction.get('Invoice_Amount', 0)
+            refund_amt = transaction.get('Refund_Amount', 0)
+            refund_ratio = refund_amt / invoice_amt if invoice_amt != 0 else 0
 
-        # Flags for new behavior
-        is_new_geo = transaction.get('Transaction_Geolocation') not in last_10_txns['Transaction_Geolocation'].values
-        is_new_method = transaction.get('Payment_Method') not in last_10_txns['Payment_Method'].values
+            # Flags for new behavior
+            is_new_geo = transaction.get('Transaction_Geolocation') not in last_10_txns['Transaction_Geolocation'].values
+            is_new_method = transaction.get('Payment_Method') not in last_10_txns['Payment_Method'].values
 
-        # Determine criticality level
-        if refund_ratio > 0.8 or invoice_amt > (avg_amt + 3 * std_amt):
-            criticality = "High"
-        elif is_new_geo or is_new_method or refund_ratio > 0.5:
-            criticality = "Medium"
+            # Determine criticality level
+            if refund_ratio > 0.8 or invoice_amt > (avg_amt + 3 * std_amt):
+                criticality = "High"
+                status = "Hold"
+            elif is_new_geo or is_new_method or refund_ratio > 0.5:
+                criticality = "Medium"
+                status = "Open"
+            else:
+                criticality = "Low"
+                status = "Open"
+            transaction['Risk'] = criticality
+            transaction['Status'] = status
+
+            df = read_csv_from_azure("TransactionWRisk.csv")
+            df.loc[len(df)] = transaction
+            write_df_to_azure(df, "TransactionWRisk.csv")
+            return 'Record Added!!'
         else:
-            criticality = "Low"
-
-        return jsonify({'criticality': criticality})
-
+            raise ValueError("Record entry failed!!")
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -132,7 +142,6 @@ def fetchTransactionsWRisk(date):
     Outlier = get_transactions_with_risks(date)
     outlier_string = str(Outlier.to_dict(orient="records"))
     return outlier_string
-
 
 
 # Function to update the transaction status
@@ -164,7 +173,7 @@ def update_status(transaction_id):
         updated = update_transaction_status(transaction_id, status)
 
         if not updated:
-            return 'Transaction ID not found'
+            return {'error': 'Transaction ID not found'}
 
         return f'Status of transaction {transaction_id} updated to {status}'
 
