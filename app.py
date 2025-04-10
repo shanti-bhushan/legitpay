@@ -192,14 +192,14 @@ def update_status(transaction_id):
         status = data.get('status')
 
         if not transaction_id or not status:
-            return jsonify({'error': 'Transaction ID and Status are required'}), 400
+            return 'Transaction ID and Status are required'
 
         # Update the transaction status in the Azure Blob CSV file
         blob_name = 'transactions.csv'  # Specify the CSV file name here
         updated = update_transaction_status(transaction_id, status)
 
         if not updated:
-            return {'error': 'Transaction ID not found'}
+            return 'Transaction ID not found'
 
         return f'Status of transaction {transaction_id} updated to {status}'
 
