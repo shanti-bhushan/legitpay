@@ -5,5 +5,5 @@ azure-storage-blob==12.19.0
 python-dotenv==1.0.1
 azure-storage-blob
 aiohttp
-semantic-kernel
+semantic-kernel==1.16.0
 typing-extensions
