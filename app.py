@@ -133,5 +133,50 @@ def fetchTransactionsWRisk(date):
     outlier_string = str(Outlier.to_dict(orient="records"))
     return outlier_string
 
+
+
+# Function to update the transaction status
+def update_transaction_status(transaction_id, status):
+    df = read_csv_from_azure("TransactionWRisk.csv")
+
+    # Find the row with the matching transaction ID and update the status
+    transaction_index = df[df["Transaction_ID"] == transaction_id].index
+    if transaction_index.empty:
+        return False  # Transaction ID not found
+    
+    df.loc[transaction_index, "Status"] = status  # Update the status
+    write_df_to_azure(df, "TransactionWRisk.csv")  # Upload the updated CSV back to Azure
+    
+    return True
+
+@app.route('/update_transaction_status/<transaction_id>', methods=['POST'])
+def update_status(transaction_id):
+    try:
+        # Get data from the request
+        data = request.get_json()
+        status = data.get('status')
+
+        if not transaction_id or not status:
+            return jsonify({'error': 'Transaction ID and Status are required'}), 400
+
+        # Update the transaction status in the Azure Blob CSV file
+        blob_name = 'transactions.csv'  # Specify the CSV file name here
+        updated = update_transaction_status(transaction_id, status)
+
+        if not updated:
+            return jsonify({'error': 'Transaction ID not found'}), 404
+
+        return jsonify({'message': f'Status of transaction {transaction_id} updated to {status}'}), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
