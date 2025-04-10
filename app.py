@@ -42,8 +42,6 @@ def write_df_to_azure(df, blob_name):
     df.to_csv(csv_buffer, index=False)
     blob_client.upload_blob(csv_buffer.getvalue(), overwrite=True)
 
-    print(f"DataFrame written to blob: {blob_name}")
-
 
 # Flask endpoint
 @app.route('/check_account/<account_number>', methods=['GET'])
@@ -82,7 +80,6 @@ def get_account_criticality():
 
         # Merge data
         merge_df = transaction_df.merge(user_df, how='inner', on='User_ID')
-        print(merge_df.dtypes)
         # Filter by account number
         account_df = merge_df[merge_df['Bank_Account_Number_x'] == account_number]
 
@@ -119,27 +116,22 @@ def get_account_criticality():
         return jsonify({'error': str(e)}), 500
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
-
 def get_transactions_with_risks(date):
     df = read_csv_from_azure("TransactionWRisk.csv")
-    
     filtered_df_wRisk = df[
         (df["Transaction_Date"] == date)
     ]
-    return not filtered_df_wRisk.empty
+    return filtered_df_wRisk
 
 # Flask endpoint
 @app.route('/fetchtransactionwithrisk/<date>', methods=['GET'])
 def fetchTransactionsWRisk(date):
-
     if not date:
         return jsonify({"error": "Missing not found in request body"}), 400
 
-    Outlier = filter_by_account_number(date)
+    Outlier = get_transactions_with_risks(date)
 
-    return jsonify(Outlier), 200
+    return jsonify(Outlier.to_dict(orient="records")), 200
 
+if __name__ == '__main__':
+    app.run(debug=True)
