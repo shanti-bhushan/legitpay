@@ -133,7 +133,7 @@ def get_transactions_with_risks(date):
     return not filtered_df_wRisk.empty
 
 # Flask endpoint
-@app.route('/check_account/<date>', methods=['GET'])
+@app.route('/fetchtransactionwithrisk/<date>', methods=['GET'])
 def fetchTransactionsWRisk(date):
 
     if not date:
