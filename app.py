@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from azure.storage.blob import BlobServiceClient
 import pandas as pd
 from io import StringIO
@@ -130,8 +130,8 @@ def fetchTransactionsWRisk(date):
         return jsonify({"error": "Missing not found in request body"}), 400
 
     Outlier = get_transactions_with_risks(date)
-
-    return jsonify(Outlier.to_dict(orient="records")), 200
+    outlier_string = str(Outlier.to_dict(orient="records"))
+    return Response(outlier_string, status=200, mimetype='text/plain')
 
 if __name__ == '__main__':
     app.run(debug=True)
