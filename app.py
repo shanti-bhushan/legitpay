@@ -164,9 +164,9 @@ def update_status(transaction_id):
         updated = update_transaction_status(transaction_id, status)
 
         if not updated:
-            return jsonify({'error': 'Transaction ID not found'}), 404
+            return 'Transaction ID not found'
 
-        return jsonify({'message': f'Status of transaction {transaction_id} updated to {status}'}), 200
+        return f'Status of transaction {transaction_id} updated to {status}'
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
