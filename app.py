@@ -6,7 +6,7 @@ from io import StringIO
 app = Flask(__name__)
 
 # Azure Blob Storage configuration
-AZURE_CONNECTION_STRING = "DefaultEndpointsProtocol=https;AccountName=legitpaystorage;AccountKey=y3gIKRQyZYkbNjdwq6qhxUM5fgVm3dZYgIfo8FvIb/BGAfvVImb5Z4mXm01DyhDYXc6bfO/ah2tT+ASt1inDcA==;EndpointSuffix=core.windows.net"
+AZURE_CONNECTION_STRING = os.get_env("storage_string")
 CONTAINER_NAME = "abc-company-data"
 
 
